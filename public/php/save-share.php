@@ -51,7 +51,7 @@ try {
     $return = array('success' => true);
 
 } catch (Exception $e) {
-    $return = array('success' => false, 'err' => $e->getMessage());
+    $return = array('success' => false, 'error' => $e->getMessage());
 }
 
 header('Content-Type: application/json');
