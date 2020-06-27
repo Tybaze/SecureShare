@@ -37,25 +37,11 @@ class SecureShare {
         
         <div class="container">
             <div class="py-5 text-center">
-            <h1>Secure Share</h1>
+            <h1><a href="/" class="text-dark">Secure Share</a></h1>
             </div>
             
-            <div class="row form-container">
-                <div class="col-xl-12">
-                    <form id="input-share">
-                        <div class="form-group">
-                            <label for="secure">Secure Content</label>
-                            <textarea class="form-control" id="secure-content" placeholder="Type here ..." required ></textarea>
-                            <small class="form-text text-muted">This content will be encrypted.</small>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Submit</button>
-                    </form>
-                </div>
-            </div>
+            <div id="content"></div>
             
-            <div class="row form-result py-5">
-            
-            </div>
         </div>
         
         <footer class="footer mt-auto py-3 bg-secondary">
@@ -69,6 +55,81 @@ class SecureShare {
 
         $('html').addClass('h-100');
         $('body').addClass('bg-light d-flex flex-column h-100').html(template);
+
+        this.controller();
+    }
+
+    controller() {
+
+        let params = (new URL(document.location)).searchParams;
+
+        if (params.get('id')) {
+            // Read Share
+            this.actionReadShare();
+        } else {
+            // Home Page
+            this.actionCreateShare();
+        }
+
+    }
+
+    actionReadShare() {
+        var html = `
+            <div id="read_share">
+                <div class="row form-container">
+                    <div class="col-xl-12 text-center">
+                    
+                        <button type="submit" class="btn btn-primary read-share">Read Share and destroy it</button>
+                    
+                    </div>
+                </div>
+            </div>
+        `
+        $('#content').html(html);
+
+
+        $('#read_share button.read-share').on('click',function() {
+            alert('SORRY WORK IN PROGRESS - having a social life ... !');
+        });
+
+        /*$('.form-result')
+            console.log(ciphertext);
+            const privateKey = (await openpgp.key.readArmored([key.privateKeyArmored])).keys[0];
+
+            const decrypted = await openpgp.decrypt({
+                message: await openpgp.message.readArmored(ciphertext),             // parse armored message
+                privateKeys: [privateKey]                                           // for decryption
+            });
+
+
+            const plaintext = await openpgp.stream.readToEnd(decrypted.data); // 'Hello, World!'
+            alert(plaintext);
+
+             */
+
+    }
+
+    actionCreateShare() {
+
+        var html = `
+            <div class="row form-container">
+                <div class="col-xl-12">
+                <form id="input-share">
+                    <div class="form-group">
+                        <label for="secure">Secure Content</label>
+                        <textarea class="form-control" id="secure-content" placeholder="Type here ..." required ></textarea>
+                        <small class="form-text text-muted">This content will be encrypted.</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+                </div>
+            </div>
+
+            <div class="row form-result py-5">
+
+            </div>`
+
+        $('#content').html(html);
 
         var myself = this;
 
@@ -90,13 +151,13 @@ class SecureShare {
 
             // Freeze the action so add a delay to display the spinner
             setTimeout(() => {
-                this.computeForm(backupActionContent);
+                this.createShare_computeForm(backupActionContent);
             }, 100);
 
         });
     }
 
-    computeForm(backupActionContent) {
+    createShare_computeForm(backupActionContent) {
         (async () => {
 
             const key = await openpgp.generateKey({
@@ -135,7 +196,7 @@ class SecureShare {
                         alert(data.error);
                     } else {
                         // revert loader
-                        myself.showPrivateKey(key.privateKeyArmored, shareId);
+                        myself.createShare_showPrivateKey(key.privateKeyArmored, shareId);
                     }
 
                     $('#input-share button[type="submit"]').html(backupActionContent);
@@ -144,25 +205,11 @@ class SecureShare {
             });
 
 
-            /*$('.form-result')
-            console.log(ciphertext);
-            const privateKey = (await openpgp.key.readArmored([key.privateKeyArmored])).keys[0];
-
-            const decrypted = await openpgp.decrypt({
-                message: await openpgp.message.readArmored(ciphertext),             // parse armored message
-                privateKeys: [privateKey]                                           // for decryption
-            });
-
-
-            const plaintext = await openpgp.stream.readToEnd(decrypted.data); // 'Hello, World!'
-            alert(plaintext);
-
-             */
         })();
 
     }
 
-    showPrivateKey(privateKeyArmored, shareId) {
+    createShare_showPrivateKey(privateKeyArmored, shareId) {
 
         let html = `
             <div class="col-xl-12">
