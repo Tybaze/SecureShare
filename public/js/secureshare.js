@@ -1,4 +1,4 @@
-class SecretShare {
+class SecureShare {
 
     _promiseRessources = Array();
 
@@ -84,8 +84,14 @@ class SecretShare {
 
             actionItem.html(htmlSpinner);
 
+            // clean possible previous form
+            $('#output-private-key').val('');
+            $('#output-link').val('');
+
             // Freeze the action so add a delay to display the spinner
-            setTimeout(() => { this.computeForm(backupActionContent); } , 100);
+            setTimeout(() => {
+                this.computeForm(backupActionContent);
+            }, 100);
 
         });
     }
@@ -112,10 +118,32 @@ class SecretShare {
 
             console.log('AJAX cipherText + ShareId');
 
-            // revert loader
-            $('#input-share button[type="submit"]').html(backupActionContent);
+            var postData = {};
+            postData.share_id = shareId;
+            postData.ciphertext = ciphertext;
 
-            this.showPrivateKey(key.privateKeyArmored, shareId);
+            var myself = this;
+
+            $.ajax({
+                url: '/php/save-share.php',
+                type: "POST",
+                data: postData,
+                dataType: 'json',
+                success: function (data) {
+
+                    if (!data.success) {
+                        alert(data.error);
+                    } else {
+                        // revert loader
+                        myself.showPrivateKey(key.privateKeyArmored, shareId);
+                    }
+
+                    $('#input-share button[type="submit"]').html(backupActionContent);
+
+                }
+            });
+
+
             /*$('.form-result')
             console.log(ciphertext);
             const privateKey = (await openpgp.key.readArmored([key.privateKeyArmored])).keys[0];
@@ -168,8 +196,9 @@ class SecretShare {
         `
         $('.form-result').html(html);
 
+        var shareUrl = window.location.protocol + '//' + window.location.hostname + '/?id=' + shareId;
 
-        $('#output-link').val(shareId).on('click', function (event) {
+        $('#output-link').val(shareUrl).on('click', function (event) {
 
             $(this).select();
             document.execCommand("copy");
@@ -283,4 +312,4 @@ class SecretShare {
 
 }
 
-let share = new SecretShare();
+let share = new SecureShare();

@@ -7,7 +7,7 @@ Demo available here : https://www.coming-soon/
 ##  Current Hash
 
 The Current Hash is : 
-> sha384-e4uG3nVuJAx7++AFwpUyvc+5naMNWDPMLAHHUxQktB0S4Kq6Ib7bZpV0QCa2lJ83
+> sha384-xxLepyO1xKkXStqt/XjrlTgDKucMQ5HHJOv5F7O2uHrnSoMBAN4nmfs9eBnZE+Sc
 
 ## How does it works
 
@@ -27,7 +27,7 @@ UserS (Sender) UserR (Receiver)
         - Link to open the share
         - PGP Private Key: called "Password"
 1. UserS send to UserR Link+Password by Email, Whatsapp, Messenger, Whatever...
-1. UserR Open the link and Load SecretShare Interface
+1. UserR Open the link and Load SecureShare Interface
 1. UserR should inspect the executed source code, like UserS
 1. UserR confirm "I wan't to read the share and destroy it"
 1. UserR will be prompt to Enter the Password
