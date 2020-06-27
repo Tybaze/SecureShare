@@ -162,7 +162,7 @@ class SecureShare {
 
             const key = await openpgp.generateKey({
                 userIds: [{name: 'Jon Doe', email: 'jon@example.com'}],
-                rsaBits: 1024,
+                rsaBits: 2048,
             });
 
             var content = $('#secure-content').val();
