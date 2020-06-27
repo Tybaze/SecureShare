@@ -1,0 +1,5 @@
+# Even CVS was doing better than GiT (joke)
+# Ignore everything in this directory
+*
+# Except this file
+!.gitignore
