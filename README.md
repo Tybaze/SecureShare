@@ -7,7 +7,7 @@ Demo available here : https://www.coming-soon/
 ##  Current Hash
 
 The Current Hash is : 
-> sha384-BReWoROO4TsJSG9i5mbV8iKsMBZoMzEL5rv3SH2DsAkivAaVvn+vK0FohCRvhBfQ
+> sha384-e4uG3nVuJAx7++AFwpUyvc+5naMNWDPMLAHHUxQktB0S4Kq6Ib7bZpV0QCa2lJ83
 
 ## How does it works
 

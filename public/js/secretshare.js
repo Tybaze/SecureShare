@@ -70,51 +70,68 @@ class SecretShare {
         $('html').addClass('h-100');
         $('body').addClass('bg-light d-flex flex-column h-100').html(template);
 
+        var myself = this;
+
         $('#input-share').on('submit', (event) => {
 
             event.preventDefault();
 
+            let actionItem = $('#input-share button[type="submit"]');
 
-            (async () => {
+            let htmlSpinner = `<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>`;
 
-                const key = await openpgp.generateKey({
-                    userIds: [{name: 'Jon Doe', email: 'jon@example.com'}],
-                    rsaBits: 1024,
-                });
+            var backupActionContent = actionItem.html();
 
-                var content = $('#secure-content').val();
+            actionItem.html(htmlSpinner);
 
-                const encrypted = await openpgp.encrypt({
-                    message: openpgp.message.fromText(content),                  // input as Message object
-                    publicKeys: (await openpgp.key.readArmored(key.publicKeyArmored)).keys, //
-                });
-
-                // ReadableStream containing '-----BEGIN PGP MESSAGE
-                const ciphertext = encrypted.data;
-
-                var shareId = this.generateShareId();
-
-                console.log('AJAX cipherText + ShareId');
-
-                this.showPrivateKey(key.privateKeyArmored, shareId);
-                /*$('.form-result')
-                console.log(ciphertext);
-                const privateKey = (await openpgp.key.readArmored([key.privateKeyArmored])).keys[0];
-
-                const decrypted = await openpgp.decrypt({
-                    message: await openpgp.message.readArmored(ciphertext),             // parse armored message
-                    privateKeys: [privateKey]                                           // for decryption
-                });
-
-
-                const plaintext = await openpgp.stream.readToEnd(decrypted.data); // 'Hello, World!'
-                alert(plaintext);
-
-                 */
-            })();
-
+            // Freeze the action so add a delay to display the spinner
+            setTimeout(() => { this.computeForm(backupActionContent); } , 100);
 
         });
+    }
+
+    computeForm(backupActionContent) {
+        (async () => {
+
+            const key = await openpgp.generateKey({
+                userIds: [{name: 'Jon Doe', email: 'jon@example.com'}],
+                rsaBits: 1024,
+            });
+
+            var content = $('#secure-content').val();
+
+            const encrypted = await openpgp.encrypt({
+                message: openpgp.message.fromText(content),                  // input as Message object
+                publicKeys: (await openpgp.key.readArmored(key.publicKeyArmored)).keys, //
+            });
+
+            // ReadableStream containing '-----BEGIN PGP MESSAGE
+            const ciphertext = encrypted.data;
+
+            var shareId = this.generateShareId();
+
+            console.log('AJAX cipherText + ShareId');
+
+            // revert loader
+            $('#input-share button[type="submit"]').html(backupActionContent);
+
+            this.showPrivateKey(key.privateKeyArmored, shareId);
+            /*$('.form-result')
+            console.log(ciphertext);
+            const privateKey = (await openpgp.key.readArmored([key.privateKeyArmored])).keys[0];
+
+            const decrypted = await openpgp.decrypt({
+                message: await openpgp.message.readArmored(ciphertext),             // parse armored message
+                privateKeys: [privateKey]                                           // for decryption
+            });
+
+
+            const plaintext = await openpgp.stream.readToEnd(decrypted.data); // 'Hello, World!'
+            alert(plaintext);
+
+             */
+        })();
+
     }
 
     showPrivateKey(privateKeyArmored, shareId) {
@@ -160,7 +177,7 @@ class SecretShare {
             $('#text-copied').modal('show');
             setTimeout(function () {
                 $('#text-copied').modal('hide');
-            }, 1500);
+            }, 1000);
         });
 
         $('#output-private-key').val(privateKeyArmored).css('height', '500px').on('click', function (event) {
@@ -171,7 +188,7 @@ class SecretShare {
             $('#text-copied').modal('show');
             setTimeout(function () {
                 $('#text-copied').modal('hide');
-            }, 1500);
+            }, 1000);
 
         });
     }
