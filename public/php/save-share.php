@@ -21,7 +21,7 @@ try {
     if(strlen($ciphertext) > 1000000) {
         throw new Exception('Too big data for the moment');
     }
-    
+
     // could be improved
     $regCipherText = '#^-{5}BEGIN PGP MESSAGE-{5}\r\nVersion: OpenPGP.js v[0-9]+\.[0-9]+\.[0-9]+\r\nComment: https://openpgpjs.org(\r\n)+([0-9a-zA-Z/\r\n+=]+)-{5}END PGP MESSAGE-{5}#m';
 
