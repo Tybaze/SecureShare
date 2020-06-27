@@ -8,6 +8,20 @@ class SecretShare {
 
     }
 
+    // dec2hex :: Integer -> String
+    // i.e. 0-255 -> '00'-'ff'
+    dec2hex(dec) {
+        return ('0' + dec.toString(16)).substr(-2)
+    }
+
+    // generateId :: Integer -> String
+    generateShareId(len) {
+        var arr = new Uint8Array((len || 40) / 2)
+        window.crypto.getRandomValues(arr)
+        return Array.from(arr, this.dec2hex).join('')
+    }
+
+
     /**
      *
      */
@@ -16,44 +30,159 @@ class SecretShare {
         var template = `
         <style>
             .container {
-                max-width: 700px;
+                max-width: 800px;
                 width: 100%;
             }
         </style>
+        
         <div class="container">
             <div class="py-5 text-center">
             <h1>Secure Share</h1>
             </div>
             
-            <div class="row">
+            <div class="row form-container">
                 <div class="col-xl-12">
                     <form id="input-share">
                         <div class="form-group">
                             <label for="secure">Secure Content</label>
-                            <textarea class="form-control" id="secure" placeholder="Type here ..."></textarea>
+                            <textarea class="form-control" id="secure-content" placeholder="Type here ..." required ></textarea>
                             <small class="form-text text-muted">This content will be encrypted.</small>
                         </div>
                         <button type="submit" class="btn btn-primary">Submit</button>
                     </form>
                 </div>
             </div>
+            
+            <div class="row form-result py-5">
+            
+            </div>
         </div>
+        
+        <footer class="footer mt-auto py-3 bg-secondary">
+            <div class="container">
+                <span class="text-muted">
+                    <a href="https://github.com/Tybaze/SecureShare" class="text-light" target="_blank">GitHub SecureShare - Check Your Hash Here</a>        
+                </span>
+            </div>
+        </footer>
         `;
 
-        $('body').addClass('bg-light').html(template);
+        $('html').addClass('h-100');
+        $('body').addClass('bg-light d-flex flex-column h-100').html(template);
 
         $('#input-share').on('submit', (event) => {
+
             event.preventDefault();
-            alert('work in progress');
+
+
+            (async () => {
+
+                const key = await openpgp.generateKey({
+                    userIds: [{name: 'Jon Doe', email: 'jon@example.com'}],
+                    rsaBits: 1024,
+                });
+
+                var content = $('#secure-content').val();
+
+                const encrypted = await openpgp.encrypt({
+                    message: openpgp.message.fromText(content),                  // input as Message object
+                    publicKeys: (await openpgp.key.readArmored(key.publicKeyArmored)).keys, //
+                });
+
+                // ReadableStream containing '-----BEGIN PGP MESSAGE
+                const ciphertext = encrypted.data;
+
+                var shareId = this.generateShareId();
+
+                console.log('AJAX cipherText + ShareId');
+
+                this.showPrivateKey(key.privateKeyArmored, shareId);
+                /*$('.form-result')
+                console.log(ciphertext);
+                const privateKey = (await openpgp.key.readArmored([key.privateKeyArmored])).keys[0];
+
+                const decrypted = await openpgp.decrypt({
+                    message: await openpgp.message.readArmored(ciphertext),             // parse armored message
+                    privateKeys: [privateKey]                                           // for decryption
+                });
+
+
+                const plaintext = await openpgp.stream.readToEnd(decrypted.data); // 'Hello, World!'
+                alert(plaintext);
+
+                 */
+            })();
+
+
         });
     }
+
+    showPrivateKey(privateKeyArmored, shareId) {
+
+        let html = `
+            <div class="col-xl-12">
+                <form id="readonly-output-share">
+                    <div class="form-group">
+                        <label for="secure">Open Share Link</label>
+                        <input type="text" class="form-control" readonly id="output-link"/>
+                    </div>
+                    <div class="form-group">
+                        <label for="secure">Password</label>
+                        <textarea class="form-control" id="output-private-key" readonly ></textarea>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal" id="text-copied" tabindex="-1" role="dialog">
+              <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                  <div class="modal-header text-center">
+                    <h5 class="modal-title">Text Copied !</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <div class="modal-footer">
+                    You can paste it anywhere
+                  </div>
+                </div>
+              </div>
+            </div>
+        `
+        $('.form-result').html(html);
+
+
+        $('#output-link').val(shareId).on('click', function (event) {
+
+            $(this).select();
+            document.execCommand("copy");
+
+            $('#text-copied').modal('show');
+            setTimeout(function () {
+                $('#text-copied').modal('hide');
+            }, 1500);
+        });
+
+        $('#output-private-key').val(privateKeyArmored).css('height', '500px').on('click', function (event) {
+
+            $(this).select();
+            document.execCommand("copy");
+
+            $('#text-copied').modal('show');
+            setTimeout(function () {
+                $('#text-copied').modal('hide');
+            }, 1500);
+
+        });
+    }
+
     /**
      *
      */
     loadRessources() {
 
 
-        this.loadRessourceJavascript('/js/jquery-3.5.1.js','sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=', (resolveMethod) => {
+        this.loadRessourceJavascript('/js/jquery-3.5.1.js', 'sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=', (resolveMethod) => {
 
             this.loadRessourceJavascript('/js/bootstrap-4.5.0.min.js', 'sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI').then(() => {
                 resolveMethod();
@@ -61,9 +190,9 @@ class SecretShare {
 
         });
 
-        this.loadRessourceJavascript('/js/openpgp-4.10.4.min.js','sha384-/N1ZJTH7aZFvzCM9Jy9dQmQzroYQpB5L2qrNPgYpg1/tbwVDvaqWwGHfHeFhSpcn');
+        this.loadRessourceJavascript('/js/openpgp-4.10.4.min.js', 'sha384-/N1ZJTH7aZFvzCM9Jy9dQmQzroYQpB5L2qrNPgYpg1/tbwVDvaqWwGHfHeFhSpcn');
 
-        this.loadRessourceCss('/css/bootstrap-4.5.0.min.css','sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk');
+        this.loadRessourceCss('/css/bootstrap-4.5.0.min.css', 'sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk');
 
         Promise.all(this._promiseRessources).then((values) => {
             this.loadLayout();
@@ -77,7 +206,7 @@ class SecretShare {
      */
     loadRessourceJavascript(url, sha, cascading) {
 
-        let promise = new Promise((resolve,reject) => {
+        let promise = new Promise((resolve, reject) => {
 
             let tag = document.createElement('script');
             tag.integrity = sha;
@@ -86,8 +215,8 @@ class SecretShare {
                 reject();
             }
             tag.onload = () => {
-                console.log('resolve '  +url);
-                if(typeof cascading !== 'undefined') {
+                console.log('resolve ' + url);
+                if (typeof cascading !== 'undefined') {
                     cascading(resolve);
                 } else {
                     resolve();
@@ -110,7 +239,7 @@ class SecretShare {
      * @param sha
      */
     loadRessourceCss(url, sha) {
-        let promise = new Promise((resolve,reject) => {
+        let promise = new Promise((resolve, reject) => {
 
             let tag = document.createElement('Link');
             tag.integrity = sha;
