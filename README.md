@@ -2,7 +2,7 @@
 
 Share content in the safest way - Even if your backend is being compromised.
 
-Demo available here : https://www.coming-soon/
+Demo available here : <a href="https://www.secure-share.link/" target="_blank">https://www.secure-share.link/</a>
 
 ##  Current Hash
 
@@ -32,9 +32,11 @@ UserS (Sender) UserR (Receiver)
 1. UserR confirm "I wan't to read the share and destroy it"
 1. UserR will be prompt to Enter the Password
 1. UserR can now read the secret text.
-        
 
-## WHY 
+<br>
+<br>
+
+## WHY this project ?
 
 ### SecureShare
 
@@ -59,7 +61,7 @@ No Bootstrap for the moment, increase dependencies is the hardest way to ensure 
 
 ### Limitations
 
-**Why Backend Server Security still mater**
+**1 - Why Backend Server Security still mater**
 
 If the data is intercepted between users, the server security part become critical.<br>
 By using the shrodinger cat security : If a share is read it is destroyed,<br>
@@ -79,13 +81,16 @@ UserS must send to UserR the "Password (Private Key)" from another way than usin
 
 - USB Key (by postal way ? :D )
 
-**UserR or/and UserS computer is compromised**
+**2 - UserR or/and UserS computer is compromised**
 
 Sorry Dude, it's dead ...
 
-**I can't inspect Source on my Smartphone**
+**3 - I can't inspect Source on my Smartphone**
 
 We should build an app ^^
+
+
+<br/>
 
 ## How to
 
@@ -97,12 +102,16 @@ or
 
 >shasum -b -a 384 secureshare.js | awk '{ print $1 }' | xxd -r -p | base64
  
+<br/>
 
 ## Todo
 
-- [ ] Make it works
+- [X] Make it create share
+- [ ] Make it read share
 - [ ] Make the share to expired 
 - [ ] Make the share to be shred
 - [ ] Allow share of files
 - [ ] Improve private key sharing using another device
 - [ ] Find a SRI check for Smartphone
+
+<br/>
