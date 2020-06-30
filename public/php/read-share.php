@@ -26,7 +26,7 @@ try {
     $length = filesize($shareFile);
     // Better than nothing for the moment
     // file_put_contents($shareFile,generateRandomString($length));
-    // unlink(
+    unlink($shareFile);
 
     $return = array('success' => true, 'ciphertext' => $ciphertext);
 
