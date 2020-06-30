@@ -7,7 +7,7 @@ Demo available here : <a href="https://www.secure-share.link/" target="_blank">h
 ##  Current Hash
 
 The Current Hash is : 
-> sha384-HcAKKH6oJIIjHfH1iHCuENrOAqKGLugpqVxhnj8jm2dO7IgGfNUjjTZZyWiMB89S
+> sha384-jB/9KTIcOU9WWkK4T5Q5wh/GTgRje6jUSmHX32a6trnDSKwtqQ72N3ZZNuhUy9Vl
 
 ## How does it works
 

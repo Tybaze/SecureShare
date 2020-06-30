@@ -1,6 +1,7 @@
 class SecureShare {
 
     _promiseRessources = Array();
+    _loadedShare = null;
 
     constructor() {
 
@@ -36,8 +37,13 @@ class SecureShare {
         </style>
         
         <div class="container">
-            <div class="py-5 text-center">
-            <h1><a href="/" class="text-dark">Secure Share</a></h1>
+            <div class="pt-5 pb-3 text-center">
+                <h1>
+                    <a href="/" class="text-dark">Secure Share</a>
+                </h1>
+            </div>
+            <div class="text-center pb-5">
+                <i>To ensure server side integrity you can check the <a href="https://github.com/Tybaze/SecureShare" target="_blank">Hash here</a> and compare with RightClick and "View Source"</i>
             </div>
             
             <div id="content"></div>
@@ -65,7 +71,7 @@ class SecureShare {
 
         if (params.get('id')) {
             // Read Share
-            this.actionReadShare();
+            this.actionReadShare(params.get('id'));
         } else {
             // Home Page
             this.actionCreateShare();
@@ -73,13 +79,13 @@ class SecureShare {
 
     }
 
-    actionReadShare() {
+    actionReadShare(share_id) {
         var html = `
-            <div id="read_share">
+            <div id="read-share">
                 <div class="row form-container">
                     <div class="col-xl-12 text-center">
                     
-                        <button type="submit" class="btn btn-primary read-share">Read Share and destroy it</button>
+                        <button type="submit" class="btn btn-primary action-read-share" data-share-id="` + share_id + `">Read this Share and destroy it.</button>
                     
                     </div>
                 </div>
@@ -88,8 +94,128 @@ class SecureShare {
         $('#content').html(html);
 
 
-        $('#read_share button.read-share').on('click',function() {
-            alert('SORRY WORK IN PROGRESS - having a social life ... !');
+        $('#read-share button.action-read-share').on('click', function () {
+
+            $(this).prop('disabled', 1);
+
+            var postData = {}
+            postData.share_id = $(this).data('share-id');
+
+            var myself = this;
+            $.ajax({
+                url: '/php/read-share.php',
+                type: "POST",
+                data: postData,
+                dataType: 'json',
+                success: function (data) {
+
+                    myself._loadedShare = data;
+                    if (!data.success) {
+                        alert(data.error);
+                        return;
+                    }
+
+                    var html = `
+                        <div id="decrypt-share" class="pb-5">
+                            <div class="row form-container">
+                                <div class="col-xl-12 text-center">
+                                
+                                    <div class="alert-container">
+                                        <div class="alert alert-primary" role="alert">
+                                            Share Destroyed - it cannot be opened again.
+                                        </div>
+                                    </div>
+
+                                    <form>
+                                        <div class="form-group">
+                                            <label for="password">Please enter password</label>
+                                            <textarea class="form-control text-monospace" type="password" id="decrypt-password" required placeholder="-----BEGIN PGP PRIVATE KEY BLOCK----- ..."></textarea>
+                                        </div>
+                                        
+                                        <button type="submit" class="btn btn-primary action-decrypt-share">Decrypt the Share</button>
+                                    </form>
+                                    
+                                </div>
+                            </div>
+                        </div>
+                    `
+                    $('#content').html(html);
+
+                    $('#decrypt-share #decrypt-password').css('height','400px');
+
+                    $('#decrypt-share button.action-decrypt-share').on('click', function(event) {
+
+                        event.preventDefault();
+
+                        var privateKeyArmored = $('#decrypt-password').val();
+
+                        var ciphertext = myself._loadedShare.ciphertext;
+
+                        $('#decrypt-alert-error').hide();
+
+                        (async () => {
+
+                            var privateKey = (await openpgp.key.readArmored([privateKeyArmored])).keys[0];
+
+                            try {
+
+                                var decrypted = await openpgp.decrypt({
+                                    message: await openpgp.message.readArmored(ciphertext),
+                                    privateKeys: [privateKey]
+                                });
+
+                            } catch (e) {
+
+                                if(!$('#decrypt-alert-error').length) {
+                                    var html = `
+                                        <div class="alert alert-danger" role="alert" id="decrypt-alert-error">
+                                            Invalid Password
+                                        </div>
+                                    `;
+
+                                    $('#decrypt-share .alert-container').append($(html));
+                                }
+
+                                $('#decrypt-alert-error').fadeIn();
+
+                                return;
+                            }
+
+
+
+                            const plainText = await openpgp.stream.readToEnd(decrypted.data);
+
+                            var html = `
+                                <div id="decrypted-share">
+                                    <div class="row form-container">
+                                        <div class="col-xl-12 text-center">
+                                        
+                                            <div class="alert alert-primary" role="alert">
+                                                Share Decrypted Successfully
+                                            </div>
+        
+                                            <form>
+                                                <div class="form-group">
+                                                    <textarea class="form-control text-monospace" type="password" id="share-output-content"  readonly ></textarea>
+                                                </div>
+                                            </form>
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+                            `
+
+                            $('#content').html(html);
+
+                            $('#share-output-content').css('height','400px').text(plainText);
+
+                        })();
+
+                    });
+
+
+                }
+            });
         });
 
         /*$('.form-result')
@@ -117,7 +243,7 @@ class SecureShare {
                 <form id="input-share">
                     <div class="form-group">
                         <label for="secure">Secure Content</label>
-                        <textarea class="form-control" id="secure-content" placeholder="Type here ..." required ></textarea>
+                        <textarea class="form-control text-monospace" id="secure-content" placeholder="Type here ..." required ></textarea>
                         <small class="form-text text-muted">This content will be encrypted.</small>
                     </div>
                     <button type="submit" class="btn btn-primary">Submit</button>
@@ -216,11 +342,11 @@ class SecureShare {
                 <form id="readonly-output-share">
                     <div class="form-group">
                         <label for="secure">Open Share Link</label>
-                        <input type="text" class="form-control" readonly id="output-link"/>
+                        <input type="text" class="form-control text-monospace" readonly id="output-link"/>
                     </div>
                     <div class="form-group">
                         <label for="secure">Password</label>
-                        <textarea class="form-control" id="output-private-key" readonly ></textarea>
+                        <textarea class="form-control text-monospace" id="output-private-key" readonly ></textarea>
                     </div>
                 </form>
             </div>
@@ -235,7 +361,7 @@ class SecureShare {
                     </button>
                   </div>
                   <div class="modal-footer">
-                    You can paste it anywhere
+                  
                   </div>
                 </div>
               </div>
@@ -253,7 +379,7 @@ class SecureShare {
             $('#text-copied').modal('show');
             setTimeout(function () {
                 $('#text-copied').modal('hide');
-            }, 1000);
+            }, 900);
         });
 
         $('#output-private-key').val(privateKeyArmored).css('height', '500px').on('click', function (event) {
@@ -264,7 +390,7 @@ class SecureShare {
             $('#text-copied').modal('show');
             setTimeout(function () {
                 $('#text-copied').modal('hide');
-            }, 1000);
+            }, 900);
 
         });
     }
