@@ -2,6 +2,10 @@ class SecureShare {
 
     _promiseRessources = Array();
     _loadedShare = null;
+    LEVEL_SIMPLE = 'simple';
+    LEVEL_DUAL = 'dual';
+    LEVEL_DEEPER = 'deeper';
+    LEVEL_PARANOID = 'paranoid';
 
     constructor() {
 
@@ -22,11 +26,32 @@ class SecureShare {
         return Array.from(arr, this.dec2hex).join('')
     }
 
+    generateRandomString(len) {
+
+        // 64 chars
+        const chars = [..."abcdefhijklmnopqrstuvwxyz*-_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"];
+
+        len = (len || 40);
+
+        // 256 vals
+        var arr = new Uint8Array(len);
+
+        window.crypto.getRandomValues(arr);
+
+        // 256 / 4 => 64 ;)
+        var generated = [...Array(len)].map(function (empty, index) {
+            return chars[Math.floor(arr[index] / 4)];
+        });
+
+        return generated.join('');
+    }
+
 
     /**
      *
      */
     loadLayout() {
+
 
         var template = `
         <style>
@@ -141,9 +166,9 @@ class SecureShare {
                     `
                     $('#content').html(html);
 
-                    $('#decrypt-share #decrypt-password').css('height','400px');
+                    $('#decrypt-share #decrypt-password').css('height', '400px');
 
-                    $('#decrypt-share button.action-decrypt-share').on('click', function(event) {
+                    $('#decrypt-share button.action-decrypt-share').on('click', function (event) {
 
                         event.preventDefault();
 
@@ -166,7 +191,7 @@ class SecureShare {
 
                             } catch (e) {
 
-                                if(!$('#decrypt-alert-error').length) {
+                                if (!$('#decrypt-alert-error').length) {
                                     var html = `
                                         <div class="alert alert-danger" role="alert" id="decrypt-alert-error">
                                             Invalid Password
@@ -180,7 +205,6 @@ class SecureShare {
 
                                 return;
                             }
-
 
 
                             const plainText = await openpgp.stream.readToEnd(decrypted.data);
@@ -207,7 +231,7 @@ class SecureShare {
 
                             $('#content').html(html);
 
-                            $('#share-output-content').css('height','400px').text(plainText);
+                            $('#share-output-content').css('height', '400px').text(plainText);
 
                         })();
 
@@ -246,6 +270,15 @@ class SecureShare {
                         <textarea class="form-control text-monospace" id="secure-content" placeholder="Type here ..." required ></textarea>
                         <small class="form-text text-muted">This content will be encrypted.</small>
                     </div>
+                    <div class="form-group">
+                        <label for="secure">Security Level</label>
+                        <select class="form-control" name="secure-level">
+                            <option value="` + this.LEVEL_SIMPLE + `" >Simple - (For Password & Access - can be revoked)</option>
+                            <option value="` + this.LEVEL_DUAL + `" disabled >Dual - (For Confidential information)</option>
+                            <option value="` + this.LEVEL_DEEPER + `">Deeper - (If a gouv. agency is watching you)</option>
+                            <option value="` + this.LEVEL_PARANOID + `" disabled >Paranoid - (Expert Use only)</option>
+                        </select>
+                    </div>
                     <button type="submit" class="btn btn-primary">Submit</button>
                 </form>
                 </div>
@@ -267,7 +300,7 @@ class SecureShare {
 
             let htmlSpinner = `<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>`;
 
-            var backupActionContent = actionItem.html();
+            actionItem.data('previous-html', actionItem.html());
 
             actionItem.html(htmlSpinner);
 
@@ -277,21 +310,33 @@ class SecureShare {
 
             // Freeze the action so add a delay to display the spinner
             setTimeout(() => {
-                this.createShare_computeForm(backupActionContent);
+                this.createShare_computeForm();
             }, 100);
 
         });
     }
 
-    createShare_computeForm(backupActionContent) {
+    createShare_computeForm() {
         (async () => {
+
+            var content = $('#secure-content').val();
+            var level = $('#secure-level').val();
+
+            var passPhrase;
+            if (level === this.LEVEL_DEEPER) {
+                passPhrase = null;
+            } else {
+                passPhrase = this.generateRandomString(60);
+            }
+
+            console.log(passPhrase);
 
             const key = await openpgp.generateKey({
                 userIds: [{name: 'Jon Doe', email: 'jon@example.com'}],
                 rsaBits: 2048,
+                passphrase: passPhrase
             });
 
-            var content = $('#secure-content').val();
 
             const encrypted = await openpgp.encrypt({
                 message: openpgp.message.fromText(content),                  // input as Message object
@@ -325,7 +370,9 @@ class SecureShare {
                         myself.createShare_showPrivateKey(key.privateKeyArmored, shareId);
                     }
 
-                    $('#input-share button[type="submit"]').html(backupActionContent);
+                    let actionItem = $('#input-share button[type="submit"]');
+
+                    actionItem.html(actionItem.html('previous-html'));
 
                 }
             });
