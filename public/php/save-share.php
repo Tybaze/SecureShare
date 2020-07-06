@@ -14,11 +14,11 @@ try {
 
     $ciphertext = $_POST['ciphertext'];
 
-    if (!preg_match('#^[0-9a-f]{40}$#', $shareId)) {
+    if (!preg_match('#^[0-9a-zA-Z_.-]{40}$#', $shareId)) {
         throw new Exception('invalid share_id');
     }
 
-    if(strlen($ciphertext) > 1000000) {
+    if (strlen($ciphertext) > 1000000) {
         throw new Exception('Too big data for the moment');
     }
 
