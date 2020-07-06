@@ -8,7 +8,7 @@ try {
 
     $shareId = $_POST['share_id'];
 
-    if (!preg_match('#^[0-9a-f]{40}$#', $shareId)) {
+    if (!preg_match('#^[0-9a-zA-Z_.-]{40}$#', $shareId)) {
         throw new Exception('invalid share_id');
     }
 
@@ -20,7 +20,20 @@ try {
         throw new Exception('Share not found or expired');
     }
 
-    $ciphertext = file_get_contents($shareFile);
+    $json = file_get_contents($shareFile);
+
+    $share = json_decode($json, TRUE);
+    if($share === NULL) {
+        throw new Exception('Failed to parse share');
+    }
+
+    // 24 hours for the moment
+    if($share['time'] + 86400 < time()) {
+
+        unlink($shareFile);
+
+        throw new Exception('This share is too old, we just destroy it');
+    }
 
     // Delete content
     $length = filesize($shareFile);
@@ -28,10 +41,21 @@ try {
     // file_put_contents($shareFile,generateRandomString($length));
     unlink($shareFile);
 
-    $return = array('success' => true, 'ciphertext' => $ciphertext);
+    $return = array(
+        'success' => true,
+        'level' => $share['level'],
+        'ciphertext' => $share['ciphertext']);
+
+    // Only for Level simple and dual
+    if(isset($share['private_key'])) {
+        $return['private_key'] = $share['private_key'];
+    }
 
 } catch (Exception $e) {
-    $return = array('success' => false, 'error' => $e->getMessage());
+    $return = array(
+        'success' => false,
+        'error' => $e->getMessage()
+    );
 }
 
 header('Content-Type: application/json');

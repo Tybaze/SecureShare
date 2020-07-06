@@ -113,6 +113,7 @@ class SecureShare {
         `
         $('#content').html(html);
 
+        var myself = this;
 
         $('#read-share button.action-read-share').on('click', function () {
 
@@ -121,7 +122,6 @@ class SecureShare {
             var postData = {}
             postData.share_id = $(this).data('share-id');
 
-            var myself = this;
             $.ajax({
                 url: '/php/read-share.php',
                 type: "POST",
@@ -132,6 +132,40 @@ class SecureShare {
                     myself._loadedShare = data;
                     if (!data.success) {
                         alert(data.error);
+                        return;
+                    }
+
+                    var htmlSharePassPhrase = `
+                        <div class="form-group">
+                            <label for="password">Please enter PassPhrase</label>
+                            <input type="text" class="form-control text-monospace" id="decrypt-passphrase" required placeholder="Passphrase ..."/>
+                        </div>`;
+
+                    var htmlSharePassword = `
+                        <div class="form-group">
+                            <label for="password">Please enter Password</label>
+                            <textarea class="form-control text-monospace"  id="decrypt-password" required placeholder="-----BEGIN PGP PRIVATE KEY BLOCK----- ..."></textarea>
+                        </div>`;
+
+                    let htmlForm = '';
+                    if (myself._loadedShare.level === myself.LEVEL_SIMPLE) {
+
+                        htmlForm = htmlSharePassPhrase;
+
+                    } else if (myself._loadedShare.level === myself.LEVEL_DUAL) {
+
+                        htmlForm = htmlSharePassPhrase;
+
+                    } else if (myself._loadedShare.level === myself.LEVEL_DEEPER) {
+
+                        htmlForm = htmlSharePassword;
+
+                    } else if (myself._loadedShare.level === myself.LEVEL_PARANOID) {
+
+                        htmlForm = htmlSharePassPhrase + htmlSharePassword;
+
+                    } else {
+                        alert('level not managed');
                         return;
                     }
 
@@ -147,10 +181,7 @@ class SecureShare {
                                     </div>
 
                                     <form>
-                                        <div class="form-group">
-                                            <label for="password">Please enter password</label>
-                                            <textarea class="form-control text-monospace" type="password" id="decrypt-password" required placeholder="-----BEGIN PGP PRIVATE KEY BLOCK----- ..."></textarea>
-                                        </div>
+                                        ` + htmlForm + `
                                         
                                         <button type="submit" class="btn btn-primary action-decrypt-share">Decrypt the Share</button>
                                     </form>
@@ -167,7 +198,31 @@ class SecureShare {
 
                         event.preventDefault();
 
-                        var privateKeyArmored = $('#decrypt-password').val();
+                        var privateKeyArmored;
+                        var passPhrase;
+                        if (myself._loadedShare.level === myself.LEVEL_SIMPLE) {
+
+                            passPhrase = $('#decrypt-passphrase').val();
+                            privateKeyArmored = myself._loadedShare.private_key;
+
+                        } else if (myself._loadedShare.level === myself.LEVEL_DUAL) {
+
+                            passPhrase = $('#decrypt-passphrase').val();
+                            privateKeyArmored = myself._loadedShare.private_key;
+
+                        } else if (myself._loadedShare.level === myself.LEVEL_DEEPER) {
+
+                            privateKeyArmored = $('#decrypt-password').val();
+
+                        } else if (myself._loadedShare.level === myself.LEVEL_PARANOID) {
+
+                            privateKeyArmored = $('#decrypt-password').val();
+                            passPhrase = $('#decrypt-passphrase').val();
+
+                        } else {
+                            alert('level not managed');
+                            return;
+                        }
 
                         var ciphertext = myself._loadedShare.ciphertext;
 
@@ -175,7 +230,11 @@ class SecureShare {
 
                         (async () => {
 
-                            var privateKey = (await openpgp.key.readArmored([privateKeyArmored])).keys[0];
+                            let privateKey = (await openpgp.key.readArmored([privateKeyArmored])).keys[0];
+
+                            if(typeof passPhrase !== 'undefined') {
+                                await privateKey.decrypt(passPhrase);
+                            }
 
                             try {
 
@@ -187,7 +246,8 @@ class SecureShare {
                             } catch (e) {
 
                                 if (!$('#decrypt-alert-error').length) {
-                                    var html = `
+
+                                    let html = `
                                         <div class="alert alert-danger" role="alert" id="decrypt-alert-error">
                                             Invalid Password
                                         </div>
@@ -311,10 +371,10 @@ class SecureShare {
 
             if (level !== this.LEVEL_DEEPER) {
                 passphrase = this.generateRandomString(60);
-                generateKeyArgs.passPhrase = passphrase;
+                generateKeyArgs.passphrase = passphrase;
             }
 
-            if(level === this.LEVEL_PARANOID) {
+            if (level === this.LEVEL_PARANOID) {
                 generateKeyArgs.rsaBits = 4096;
             }
 
@@ -337,11 +397,11 @@ class SecureShare {
 
             var postData = {};
             postData.share_id = shareId;
-            postData.share_level = level;
+            postData.level = level;
             postData.ciphertext = ciphertext;
             // Crypography of SIMPLE and DUAL only rely on AES 256 of the key (should directly use it ... )
             if (level === this.LEVEL_SIMPLE || level === this.LEVEL_DUAL) {
-                postData.privateKey = key.privateKeyArmored
+                postData.private_key = key.privateKeyArmored
             }
 
             var myself = this;
@@ -399,7 +459,7 @@ class SecureShare {
                 <input type="text" class="form-control text-monospace share-content " id="output-passphrase" readonly value="` + passPhrase + `"/>
             </div>`;
 
-        let htmlPassword =  `
+        let htmlPassword = `
             <div class="form-group">
                 <label for="output-private-key">Password</label>
                 <textarea class="form-control text-monospace share-content" id="output-private-key" readonly >` + privateKeyArmored + `</textarea>
@@ -409,22 +469,22 @@ class SecureShare {
         let htmlForm = '';
         let htmlText = '';
 
-        if(level === this.LEVEL_SIMPLE) {
+        if (level === this.LEVEL_SIMPLE) {
 
             htmlText = 'Copy/Paste this content to your contact';
             htmlForm = htmlSimple;
 
-        } else if(level === this.LEVEL_DUAL) {
+        } else if (level === this.LEVEL_DUAL) {
 
             htmlText = 'Send to your contact using <b>2 communication channels</b>.<br>For example: <ul><li>Link by Whatsapp</li><li>Passphrase by Email</li></ul>';
             htmlForm = htmlLink + htmlPassphrase;
 
-        } else if(level === this.LEVEL_DEEPER) {
+        } else if (level === this.LEVEL_DEEPER) {
 
             htmlText = 'Send to your contact using <b>2 communication channels</b>.<br>For example: <ul><li>Link by Whatsapp</li><li>Password by Email</li></ul>';
             htmlForm = htmlLink + htmlPassword;
 
-        } else if(level === this.LEVEL_PARANOID) {
+        } else if (level === this.LEVEL_PARANOID) {
 
             htmlText = 'Your contact need to be aware of the procedure.<br/>Both of you need to use several chanel</br:><br>For example: <ul><li>Send Link by Whatsapp using your mobile ISP, and readed by your contact on mobile ISP</li><li>Send Passphrase by Email (protonmail?) using Fix ISP, and readed by your contact on Fix ISP too</li><li>And the Passphrase by physical Mail</li></ul>';
             htmlForm = htmlLink + htmlPassphrase + htmlPassword;
