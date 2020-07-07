@@ -2,6 +2,10 @@ class SecureShare {
 
     _promiseRessources = Array();
     _loadedShare = null;
+    LEVEL_SIMPLE = 'simple';
+    LEVEL_DUAL = 'dual';
+    LEVEL_DEEPER = 'deeper';
+    LEVEL_PARANOID = 'paranoid';
 
     constructor() {
 
@@ -9,17 +13,32 @@ class SecureShare {
 
     }
 
-    // dec2hex :: Integer -> String
-    // i.e. 0-255 -> '00'-'ff'
-    dec2hex(dec) {
-        return ('0' + dec.toString(16)).substr(-2)
+    generateShareId(len) {
+        return this.generateRandomString(40);
     }
 
-    // generateId :: Integer -> String
-    generateShareId(len) {
-        var arr = new Uint8Array((len || 40) / 2)
-        window.crypto.getRandomValues(arr)
-        return Array.from(arr, this.dec2hex).join('')
+    generatePassPhrase(len) {
+        return this.generateRandomString(60);
+    }
+
+    generateRandomString(len) {
+
+        // 64 chars
+        const chars = [..."abcdefhijklmnopqrstuvwxyz.-_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"];
+
+        len = (len || 40);
+
+        // 256 vals
+        var arr = new Uint8Array(len);
+
+        window.crypto.getRandomValues(arr);
+
+        // 256 / 4 => 64 ;)
+        var generated = [...Array(len)].map(function (empty, index) {
+            return chars[Math.floor(arr[index] / 4)];
+        });
+
+        return generated.join('');
     }
 
 
@@ -27,6 +46,7 @@ class SecureShare {
      *
      */
     loadLayout() {
+
 
         var template = `
         <style>
@@ -93,6 +113,7 @@ class SecureShare {
         `
         $('#content').html(html);
 
+        var myself = this;
 
         $('#read-share button.action-read-share').on('click', function () {
 
@@ -101,7 +122,6 @@ class SecureShare {
             var postData = {}
             postData.share_id = $(this).data('share-id');
 
-            var myself = this;
             $.ajax({
                 url: '/php/read-share.php',
                 type: "POST",
@@ -112,6 +132,40 @@ class SecureShare {
                     myself._loadedShare = data;
                     if (!data.success) {
                         alert(data.error);
+                        return;
+                    }
+
+                    var htmlSharePassPhrase = `
+                        <div class="form-group">
+                            <label for="password">Please enter PassPhrase</label>
+                            <input type="text" class="form-control text-monospace" id="decrypt-passphrase" required placeholder="Passphrase ..."/>
+                        </div>`;
+
+                    var htmlSharePassword = `
+                        <div class="form-group">
+                            <label for="password">Please enter Password</label>
+                            <textarea class="form-control text-monospace"  id="decrypt-password" required placeholder="-----BEGIN PGP PRIVATE KEY BLOCK----- ..."></textarea>
+                        </div>`;
+
+                    let htmlForm = '';
+                    if (myself._loadedShare.level === myself.LEVEL_SIMPLE) {
+
+                        htmlForm = htmlSharePassPhrase;
+
+                    } else if (myself._loadedShare.level === myself.LEVEL_DUAL) {
+
+                        htmlForm = htmlSharePassPhrase;
+
+                    } else if (myself._loadedShare.level === myself.LEVEL_DEEPER) {
+
+                        htmlForm = htmlSharePassword;
+
+                    } else if (myself._loadedShare.level === myself.LEVEL_PARANOID) {
+
+                        htmlForm = htmlSharePassPhrase + htmlSharePassword;
+
+                    } else {
+                        alert('level not managed');
                         return;
                     }
 
@@ -127,10 +181,7 @@ class SecureShare {
                                     </div>
 
                                     <form>
-                                        <div class="form-group">
-                                            <label for="password">Please enter password</label>
-                                            <textarea class="form-control text-monospace" type="password" id="decrypt-password" required placeholder="-----BEGIN PGP PRIVATE KEY BLOCK----- ..."></textarea>
-                                        </div>
+                                        ` + htmlForm + `
                                         
                                         <button type="submit" class="btn btn-primary action-decrypt-share">Decrypt the Share</button>
                                     </form>
@@ -141,13 +192,37 @@ class SecureShare {
                     `
                     $('#content').html(html);
 
-                    $('#decrypt-share #decrypt-password').css('height','400px');
+                    $('#decrypt-share #decrypt-password').css('height', '400px');
 
-                    $('#decrypt-share button.action-decrypt-share').on('click', function(event) {
+                    $('#decrypt-share button.action-decrypt-share').on('click', function (event) {
 
                         event.preventDefault();
 
-                        var privateKeyArmored = $('#decrypt-password').val();
+                        var privateKeyArmored;
+                        var passPhrase;
+                        if (myself._loadedShare.level === myself.LEVEL_SIMPLE) {
+
+                            passPhrase = $('#decrypt-passphrase').val();
+                            privateKeyArmored = myself._loadedShare.private_key;
+
+                        } else if (myself._loadedShare.level === myself.LEVEL_DUAL) {
+
+                            passPhrase = $('#decrypt-passphrase').val();
+                            privateKeyArmored = myself._loadedShare.private_key;
+
+                        } else if (myself._loadedShare.level === myself.LEVEL_DEEPER) {
+
+                            privateKeyArmored = $('#decrypt-password').val();
+
+                        } else if (myself._loadedShare.level === myself.LEVEL_PARANOID) {
+
+                            privateKeyArmored = $('#decrypt-password').val();
+                            passPhrase = $('#decrypt-passphrase').val();
+
+                        } else {
+                            alert('level not managed');
+                            return;
+                        }
 
                         var ciphertext = myself._loadedShare.ciphertext;
 
@@ -155,7 +230,11 @@ class SecureShare {
 
                         (async () => {
 
-                            var privateKey = (await openpgp.key.readArmored([privateKeyArmored])).keys[0];
+                            let privateKey = (await openpgp.key.readArmored([privateKeyArmored])).keys[0];
+
+                            if(typeof passPhrase !== 'undefined') {
+                                await privateKey.decrypt(passPhrase);
+                            }
 
                             try {
 
@@ -166,8 +245,9 @@ class SecureShare {
 
                             } catch (e) {
 
-                                if(!$('#decrypt-alert-error').length) {
-                                    var html = `
+                                if (!$('#decrypt-alert-error').length) {
+
+                                    let html = `
                                         <div class="alert alert-danger" role="alert" id="decrypt-alert-error">
                                             Invalid Password
                                         </div>
@@ -180,7 +260,6 @@ class SecureShare {
 
                                 return;
                             }
-
 
 
                             const plainText = await openpgp.stream.readToEnd(decrypted.data);
@@ -207,7 +286,7 @@ class SecureShare {
 
                             $('#content').html(html);
 
-                            $('#share-output-content').css('height','400px').text(plainText);
+                            $('#share-output-content').css('height', '400px').text(plainText);
 
                         })();
 
@@ -218,20 +297,6 @@ class SecureShare {
             });
         });
 
-        /*$('.form-result')
-            console.log(ciphertext);
-            const privateKey = (await openpgp.key.readArmored([key.privateKeyArmored])).keys[0];
-
-            const decrypted = await openpgp.decrypt({
-                message: await openpgp.message.readArmored(ciphertext),             // parse armored message
-                privateKeys: [privateKey]                                           // for decryption
-            });
-
-
-            const plaintext = await openpgp.stream.readToEnd(decrypted.data); // 'Hello, World!'
-            alert(plaintext);
-
-             */
 
     }
 
@@ -246,7 +311,16 @@ class SecureShare {
                         <textarea class="form-control text-monospace" id="secure-content" placeholder="Type here ..." required ></textarea>
                         <small class="form-text text-muted">This content will be encrypted.</small>
                     </div>
-                    <button type="submit" class="btn btn-primary">Submit</button>
+                    <div class="form-group">
+                        <label for="secure-level">Security Level</label>
+                        <select class="form-control" id="secure-level">
+                            <option value="` + this.LEVEL_SIMPLE + `">Simple => for password & access - should be revoked</option>
+                            <option value="` + this.LEVEL_DUAL + `">Dual => for confidential information</option>
+                            <option value="` + this.LEVEL_DEEPER + `">Deeper => if a gouv. agency is watching you</option>
+                            <option value="` + this.LEVEL_PARANOID + `">Paranoid => expert use only</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Build Secure Share</button>
                 </form>
                 </div>
             </div>
@@ -267,47 +341,68 @@ class SecureShare {
 
             let htmlSpinner = `<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>`;
 
-            var backupActionContent = actionItem.html();
+            actionItem.data('previous-html', actionItem.html());
 
             actionItem.html(htmlSpinner);
 
             // clean possible previous form
-            $('#output-private-key').val('');
-            $('#output-link').val('');
+            $('.form-result').html('');
 
             // Freeze the action so add a delay to display the spinner
             setTimeout(() => {
-                this.createShare_computeForm(backupActionContent);
+                this.createShare_computeForm();
             }, 100);
 
         });
     }
 
-    createShare_computeForm(backupActionContent) {
+    createShare_computeForm() {
         (async () => {
 
-            const key = await openpgp.generateKey({
+            var content = $('#secure-content').val();
+            var level = $('#secure-level').val();
+
+            var passphrase = '';
+
+            let generateKeyArgs = {
                 userIds: [{name: 'Jon Doe', email: 'jon@example.com'}],
                 rsaBits: 2048,
-            });
+            }
 
-            var content = $('#secure-content').val();
+            if (level !== this.LEVEL_DEEPER) {
+                passphrase = this.generateRandomString(60);
+                generateKeyArgs.passphrase = passphrase;
+            }
 
+            if (level === this.LEVEL_PARANOID) {
+                generateKeyArgs.rsaBits = 4096;
+            }
+
+            // Passphrase is aes256
+            // Source here :
+            // https://github.com/openpgpjs/openpgpjs/blob/master/src/packet/secret_key.js
+            // Method : SecretKey.prototype.encrypt
+            const key = await openpgp.generateKey(generateKeyArgs);
+
+            // encrypt
             const encrypted = await openpgp.encrypt({
                 message: openpgp.message.fromText(content),                  // input as Message object
                 publicKeys: (await openpgp.key.readArmored(key.publicKeyArmored)).keys, //
             });
 
-            // ReadableStream containing '-----BEGIN PGP MESSAGE
+            // ReadableStream containing '-----BEGIN PGP MESSAGE foo ...-----'
             const ciphertext = encrypted.data;
 
             var shareId = this.generateShareId();
 
-            console.log('AJAX cipherText + ShareId');
-
             var postData = {};
             postData.share_id = shareId;
+            postData.level = level;
             postData.ciphertext = ciphertext;
+            // Crypography of SIMPLE and DUAL only rely on AES 256 of the key (should directly use it ... )
+            if (level === this.LEVEL_SIMPLE || level === this.LEVEL_DUAL) {
+                postData.private_key = key.privateKeyArmored
+            }
 
             var myself = this;
 
@@ -321,11 +416,12 @@ class SecureShare {
                     if (!data.success) {
                         alert(data.error);
                     } else {
-                        // revert loader
-                        myself.createShare_showPrivateKey(key.privateKeyArmored, shareId);
+                        myself.createShare_showPrivateShare(level, shareId, key.privateKeyArmored, passphrase);
                     }
 
-                    $('#input-share button[type="submit"]').html(backupActionContent);
+                    // revert loader
+                    let actionItem = $('#input-share button[type="submit"]');
+                    actionItem.html(actionItem.data('previous-html'));
 
                 }
             });
@@ -335,19 +431,76 @@ class SecureShare {
 
     }
 
-    createShare_showPrivateKey(privateKeyArmored, shareId) {
+    createShare_showPrivateShare(level, shareId, privateKeyArmored, passPhrase) {
+
+
+        var shareUrl = window.location.protocol + '//' + window.location.hostname + '/?id=' + shareId;
+
+        let htmlSimple = `
+            <style>
+                #output-share {
+                    line-height: 34px;
+                }
+            </style>
+            <div class="form-group">
+                <textarea class="form-control text-monospace share-content" id="output-share" readonly >` + shareUrl + "\nPassword: " + passPhrase + `</textarea>
+            </div>
+        `
+
+        let htmlLink = `
+            <div class="form-group">
+                <label for="output-link">Share Link</label>
+                <input type="text" class="form-control text-monospace share-content " id="output-link" readonly value="` + shareUrl + `"/>
+            </div>`;
+
+        let htmlPassphrase = `
+            <div class="form-group">
+                <label for="output-passphrase">PassPhrase</label>
+                <input type="text" class="form-control text-monospace share-content " id="output-passphrase" readonly value="` + passPhrase + `"/>
+            </div>`;
+
+        let htmlPassword = `
+            <div class="form-group">
+                <label for="output-private-key">Password</label>
+                <textarea class="form-control text-monospace share-content" id="output-private-key" readonly >` + privateKeyArmored + `</textarea>
+            </div>
+            `;
+
+        let htmlForm = '';
+        let htmlText = '';
+
+        if (level === this.LEVEL_SIMPLE) {
+
+            htmlText = 'Copy/Paste this content to your contact';
+            htmlForm = htmlSimple;
+
+        } else if (level === this.LEVEL_DUAL) {
+
+            htmlText = 'Send to your contact using <b>2 communication channels</b>.<br>For example: <ul><li>Link by Whatsapp</li><li>Passphrase by Email</li></ul>';
+            htmlForm = htmlLink + htmlPassphrase;
+
+        } else if (level === this.LEVEL_DEEPER) {
+
+            htmlText = 'Send to your contact using <b>2 communication channels</b>.<br>For example: <ul><li>Link by Whatsapp</li><li>Password by Email</li></ul>';
+            htmlForm = htmlLink + htmlPassword;
+
+        } else if (level === this.LEVEL_PARANOID) {
+
+            htmlText = 'Your contact need to be aware of the procedure.<br/>Both of you need to use several chanel</br:><br>For example: <ul><li>Send Link by Whatsapp using your mobile ISP, and readed by your contact on mobile ISP</li><li>Send Passphrase by Email (protonmail?) using Fix ISP, and readed by your contact on Fix ISP too</li><li>And the Passphrase by physical Mail</li></ul>';
+            htmlForm = htmlLink + htmlPassphrase + htmlPassword;
+
+        } else {
+
+            alert('An error occurs, not managed security level');
+
+        }
 
         let html = `
             <div class="col-xl-12">
                 <form id="readonly-output-share">
-                    <div class="form-group">
-                        <label for="secure">Open Share Link</label>
-                        <input type="text" class="form-control text-monospace" readonly id="output-link"/>
-                    </div>
-                    <div class="form-group">
-                        <label for="secure">Password</label>
-                        <textarea class="form-control text-monospace" id="output-private-key" readonly ></textarea>
-                    </div>
+                    <h2>How to ?</h2>
+                    <div>` + htmlText + `</div>
+                    ` + htmlForm + `
                 </form>
             </div>
             
@@ -369,20 +522,10 @@ class SecureShare {
         `
         $('.form-result').html(html);
 
-        var shareUrl = window.location.protocol + '//' + window.location.hostname + '/?id=' + shareId;
 
-        $('#output-link').val(shareUrl).on('click', function (event) {
+        $('#output-private-key').css('height', '500px');
 
-            $(this).select();
-            document.execCommand("copy");
-
-            $('#text-copied').modal('show');
-            setTimeout(function () {
-                $('#text-copied').modal('hide');
-            }, 900);
-        });
-
-        $('#output-private-key').val(privateKeyArmored).css('height', '500px').on('click', function (event) {
+        $('#readonly-output-share .share-content').on('click', function (event) {
 
             $(this).select();
             document.execCommand("copy");
@@ -390,7 +533,7 @@ class SecureShare {
             $('#text-copied').modal('show');
             setTimeout(function () {
                 $('#text-copied').modal('hide');
-            }, 900);
+            }, 1000);
 
         });
     }
