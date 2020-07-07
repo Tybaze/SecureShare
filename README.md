@@ -7,7 +7,55 @@ Demo available here : <a href="https://www.secure-share.link/" target="_blank">h
 ##  Current Hash
 
 The Current Hash is : 
-> sha384-jB/9KTIcOU9WWkK4T5Q5wh/GTgRje6jUSmHX32a6trnDSKwtqQ72N3ZZNuhUy9Vl
+> sha384-T8cK+WKkL264LiC1nT6rj9z9pzujgzghyzCXHc2SXY+CvrfWMID7J+rG0JxJ365r
+
+## The 4 Security Levels 
+
+Please note that security is not only a question of technology, but mainly a human behavior.
+
+- When you open a Share if you get the message "This Share does not exist or already opened".<br>
+<b>PLEASE ALERT THE SENDER OF THE SHARE - Maybe someone open the Share before you</b>
+
+- If your data are really sensible and you do not rely on the server, please check the Hash<br>
+(view source in your browser compare with the hash just over)  
+
+### Simple 
+
+Secure the data with AES-256 - Easy and enough for sharing Passwords.
+
+If a hacker intercept the "Share" access before the destination, you can define the Password again.
+Once openned the Share is destroyed, this method garantee you at least, for Sender and Receveir :
+- If your mailbox or chat is Hacked later, the hacker can't access passwords 
+- If your mailbox or chat is currently hacked, if the hacker open if AFTER you he can't access data, if the Hacker open it BEFORE you, you will know it.<br>
+
+
+### Dual
+
+Same security as <i>Simple</i>, but splitted into 2 communication methods - Recommanded for exchanging Sensible data
+
+- Same advantage as Simple
+- The Hacker need to hack both communication channels, So it really reduced the probability of beeing able to open the share before the receiver.
+  
+
+### Deeper
+
+Replace Symetric AES-256 with Asymetric PGP, it's useful if you do not rely on the server security, and think that AES-256 is not enough.
+
+Please note :
+- Same Advantage as Dual
+- Like the "Dual", please use 2 communication channels. 
+- Only Gov Agency should be able to break the AES-256 of Dual and Simple Methods
+- This method is harder to use, because the "Password" (also know as Private Key) format do not make it easy to share. 
+
+### Paranoid 
+
+Use Both Symetric AES-256 and Asymetric PGP.
+
+Please note : 
+- Same Advantage as Deeper
+- Generation of the share could be long and hang your browser, because it use 4096 rsa key
+- Use really 3 distinct communication channels, and share the "Password" (PrivateKey) on the safest way.
+- You should really <b>BOTH</b> use several "Connections", because if you Sender or Receiver are under a man in the middle proxy, you shouldn't rely on only one connection.  
 
 ## How does it works
 
@@ -107,11 +155,12 @@ or
 ## Todo
 
 - [X] Make it create share
-- [ ] Make it read share
-- [ ] Make the share to expired 
-- [ ] Make the share to be shred
+- [X] Make it read share
+- [X] Make the share to expired 
+- [X] Make the share to be shred
+- [X] Implements Security Levels
 - [ ] Allow share of files
-- [ ] Improve private key sharing using another device
-- [ ] Find a SRI check for Smartphone
-
+- [ ] Find an easy SRI check for Smartphone
+- [ ] Make expire in parameter
+- [ ] Allow local result caching
 <br/>
