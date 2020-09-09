@@ -1,13 +1,13 @@
 class SecureShare {
 
-    _promiseRessources = Array();
-    _loadedShare = null;
-    LEVEL_SIMPLE = 'simple';
-    LEVEL_DUAL = 'dual';
-    LEVEL_DEEPER = 'deeper';
-    LEVEL_PARANOID = 'paranoid';
-
     constructor() {
+
+        this._promiseRessources = Array();
+        this._loadedShare = null;
+        this.LEVEL_SIMPLE = 'simple';
+        this.LEVEL_DUAL = 'dual';
+        this.LEVEL_DEEPER = 'deeper';
+        this.LEVEL_PARANOID = 'paranoid';
 
         this.loadRessources();
 
@@ -314,7 +314,7 @@ class SecureShare {
                     <div class="form-group">
                         <label for="secure-level">Security Level</label>
                         <select class="form-control" id="secure-level">
-                            <option value="` + this.LEVEL_SIMPLE + `">Simple => for password & access - should be revoked</option>
+                            <option value="` + this.LEVEL_SIMPLE + `">Simple => for password & access - could be revoked</option>
                             <option value="` + this.LEVEL_DUAL + `">Dual => for confidential information</option>
                             <option value="` + this.LEVEL_DEEPER + `">Deeper => if a gouv. agency is watching you</option>
                             <option value="` + this.LEVEL_PARANOID + `">Paranoid => expert use only</option>
