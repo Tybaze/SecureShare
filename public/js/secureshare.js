@@ -137,14 +137,14 @@ class SecureShare {
 
                     var htmlSharePassPhrase = `
                         <div class="form-group">
-                            <label for="password">Please enter PassPhrase</label>
+                            <label for="decrypt-passphrase">Please enter PassPhrase</label>
                             <input type="text" class="form-control text-monospace" id="decrypt-passphrase" required placeholder="Passphrase ..."/>
                         </div>`;
 
-                    var htmlSharePassword = `
+                    var htmlShareDecryptKey = `
                         <div class="form-group">
-                            <label for="password">Please enter Password</label>
-                            <textarea class="form-control text-monospace"  id="decrypt-password" required placeholder="-----BEGIN PGP PRIVATE KEY BLOCK----- ..."></textarea>
+                            <label for="decrypt-key">Please enter DecryptKey</label>
+                            <textarea class="form-control text-monospace" id="decrypt-key" required placeholder="-----BEGIN PGP PRIVATE KEY BLOCK----- ..."></textarea>
                         </div>`;
 
                     let htmlForm = '';
@@ -158,11 +158,11 @@ class SecureShare {
 
                     } else if (myself._loadedShare.level === myself.LEVEL_DEEPER) {
 
-                        htmlForm = htmlSharePassword;
+                        htmlForm = htmlShareDecryptKey;
 
                     } else if (myself._loadedShare.level === myself.LEVEL_PARANOID) {
 
-                        htmlForm = htmlSharePassPhrase + htmlSharePassword;
+                        htmlForm = htmlSharePassPhrase + htmlShareDecryptKey;
 
                     } else {
                         alert('level not managed');
@@ -192,7 +192,7 @@ class SecureShare {
                     `
                     $('#content').html(html);
 
-                    $('#decrypt-share #decrypt-password').css('height', '400px');
+                    $('#decrypt-share #decrypt-key').css('height', '400px');
 
                     $('#decrypt-share button.action-decrypt-share').on('click', function (event) {
 
@@ -212,11 +212,11 @@ class SecureShare {
 
                         } else if (myself._loadedShare.level === myself.LEVEL_DEEPER) {
 
-                            privateKeyArmored = $('#decrypt-password').val();
+                            privateKeyArmored = $('#decrypt-key').val();
 
                         } else if (myself._loadedShare.level === myself.LEVEL_PARANOID) {
 
-                            privateKeyArmored = $('#decrypt-password').val();
+                            privateKeyArmored = $('#decrypt-key').val();
                             passPhrase = $('#decrypt-passphrase').val();
 
                         } else {
@@ -249,7 +249,7 @@ class SecureShare {
 
                                     let html = `
                                         <div class="alert alert-danger" role="alert" id="decrypt-alert-error">
-                                            Invalid Password
+                                            Invalid PassPhrase
                                         </div>
                                     `;
 
@@ -451,16 +451,6 @@ class SecureShare {
 
         var shareUrl = window.location.protocol + '//' + window.location.hostname + '/?id=' + shareId;
 
-        let htmlSimple = `
-            <style>
-                #output-share {
-                    line-height: 34px;
-                }
-            </style>
-            <div class="form-group">
-                <textarea class="form-control text-monospace share-content" id="output-share" readonly >` + shareUrl + "\nPassword: " + passPhrase + `</textarea>
-            </div>
-        `
 
         let htmlLink = `
             <div class="form-group">
@@ -474,9 +464,9 @@ class SecureShare {
                 <input type="text" class="form-control text-monospace share-content " id="output-passphrase" readonly value="` + passPhrase + `"/>
             </div>`;
 
-        let htmlPassword = `
+        let htmlDecryptKey = `
             <div class="form-group">
-                <label for="output-private-key">Password</label>
+                <label for="output-private-key">DecryptKey</label>
                 <textarea class="form-control text-monospace share-content" id="output-private-key" readonly >` + privateKeyArmored + `</textarea>
             </div>
             `;
@@ -487,7 +477,7 @@ class SecureShare {
         if (level === this.LEVEL_SIMPLE) {
 
             htmlText = 'Copy/Paste this content to your contact';
-            htmlForm = htmlSimple;
+            htmlForm = htmlLink + htmlPassphrase;
 
         } else if (level === this.LEVEL_DUAL) {
 
@@ -496,13 +486,13 @@ class SecureShare {
 
         } else if (level === this.LEVEL_DEEPER) {
 
-            htmlText = 'Send to your contact using <b>2 communication channels</b>.<br>For example: <ul><li>Link by Whatsapp</li><li>Password by Email</li></ul>';
-            htmlForm = htmlLink + htmlPassword;
+            htmlText = 'Send to your contact using <b>2 communication channels</b>.<br>For example: <ul><li>Link by Whatsapp</li><li>DecryptKey by Email</li></ul>';
+            htmlForm = htmlLink + htmlDecryptKey;
 
         } else if (level === this.LEVEL_PARANOID) {
 
             htmlText = 'Your contact need to be aware of the procedure.<br/>Both of you need to use several chanel</br:><br>For example: <ul><li>Send Link by Whatsapp using your mobile ISP, and readed by your contact on mobile ISP</li><li>Send Passphrase by Email (protonmail?) using Fix ISP, and readed by your contact on Fix ISP too</li><li>And the Passphrase by physical Mail</li></ul>';
-            htmlForm = htmlLink + htmlPassphrase + htmlPassword;
+            htmlForm = htmlLink + htmlPassphrase + htmlDecryptKey;
 
         } else {
 
@@ -514,7 +504,7 @@ class SecureShare {
             <div class="col-xl-12">
                 <form id="readonly-output-share">
                     <h2>How to ?</h2>
-                    <div>` + htmlText + `</div>
+                    <div class="pb-2">` + htmlText + `</div>
                     ` + htmlForm + `
                 </form>
             </div>
@@ -527,9 +517,6 @@ class SecureShare {
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                       <span aria-hidden="true">&times;</span>
                     </button>
-                  </div>
-                  <div class="modal-footer">
-                  
                   </div>
                 </div>
               </div>
