@@ -320,6 +320,19 @@ class SecureShare {
                             <option value="` + this.LEVEL_PARANOID + `">Paranoid => expert use only</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label for="secure-level">Expiration</label>
+                        <select class="form-control" id="expiration">
+                            <option value="300">5 minutes</option>
+                            <option value="900">15 minutes</option>
+                            <option value="3600">1 hour</option>
+                            <option value="28800">8 hours</option>
+                            <option value="86400" selected >24 hours</option>
+                            <option value="259200">3 days</option>
+                            <option value="604800">1 week</option>
+                            <option value="2592000">1 month</option>
+                        </select>
+                    </div>
                     <button type="submit" class="btn btn-primary">Build Secure Share</button>
                 </form>
                 </div>
@@ -361,6 +374,7 @@ class SecureShare {
 
             var content = $('#secure-content').val();
             var level = $('#secure-level').val();
+            var expiration = $('#expiration').val();
 
             var passphrase = '';
 
@@ -399,6 +413,7 @@ class SecureShare {
             postData.share_id = shareId;
             postData.level = level;
             postData.ciphertext = ciphertext;
+            postData.expiration = expiration;
             // Crypography of SIMPLE and DUAL only rely on AES 256 of the key (should directly use it ... )
             if (level === this.LEVEL_SIMPLE || level === this.LEVEL_DUAL) {
                 postData.private_key = key.privateKeyArmored

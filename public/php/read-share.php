@@ -16,30 +16,28 @@ try {
 
     $shareFile = $sharePath . $shareId;
 
-    if(!is_file($shareFile)) {
+    if (!is_file($shareFile)) {
         throw new Exception('Share not found or expired');
     }
 
     $json = file_get_contents($shareFile);
 
+
     $share = json_decode($json, TRUE);
-    if($share === NULL) {
+    if ($share === NULL) {
+        // Should be investigated
         throw new Exception('Failed to parse share');
     }
 
+    // Delete content after json validation
+    shred($shareFile);
+
+    $expiration = $share['expiration'] ?? 86400;
+
     // 24 hours for the moment
-    if($share['time'] + 86400 < time()) {
-
-        unlink($shareFile);
-
+    if ($share['time'] + $expiration < time()) {
         throw new Exception('This share is too old, we just destroy it');
     }
-
-    // Delete content
-    $length = filesize($shareFile);
-    // Better than nothing for the moment
-    // file_put_contents($shareFile,generateRandomString($length));
-    unlink($shareFile);
 
     $return = array(
         'success' => true,
@@ -47,7 +45,7 @@ try {
         'ciphertext' => $share['ciphertext']);
 
     // Only for Level simple and dual
-    if(isset($share['private_key'])) {
+    if (isset($share['private_key'])) {
         $return['private_key'] = $share['private_key'];
     }
 
@@ -62,11 +60,14 @@ header('Content-Type: application/json');
 echo json_encode($return);
 
 
-
 /**
  *  Generate a random string matching [0-9a-zA-Z]
+ *
+ * @param $length
+ * @param $characters
+ * @return string
  */
-function generateRandomString($length = 10, $characters = null)
+function generateRandomString($length = 10, $characters = null): string
 {
 
     if (!$characters) {
@@ -78,4 +79,30 @@ function generateRandomString($length = 10, $characters = null)
         $randomString .= $characters[mt_rand(0, $charactersLength - 1)];
     }
     return $randomString;
+}
+
+/**
+ * @param $filePath
+ * @return void
+ * @throws Exception
+ */
+function shred($filePath): void
+{
+    if (!is_readable($filePath)) {
+        throw new Exception('Failed to read share - please contact administrator');
+    }
+
+    if (!is_writable($filePath)) {
+        throw new Exception('Failed to write share - please contact administrator');
+    }
+
+    $length = filesize($filePath);
+
+    for ($i = 0; $i < 5; $i++) {
+        file_put_contents($filePath, generateRandomString($length));
+    }
+
+    if (!unlink($filePath)) {
+        throw new Exception('Failed to Delete shared - please contact administrator');
+    }
 }

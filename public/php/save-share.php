@@ -18,13 +18,13 @@ try {
     //
     // Security Level
     //
-    if(!isset($_POST['level'])) {
+    if (!isset($_POST['level'])) {
         throw new Exception('missing level');
     }
 
     $level = $_POST['level'];
 
-    if(!in_array($level, array('simple','dual','deeper','paranoid'))) {
+    if (!in_array($level, array('simple', 'dual', 'deeper', 'paranoid'))) {
         throw new Exception('Invalid level');
     }
 
@@ -53,9 +53,9 @@ try {
     // Private Key [Optional]
     //
     $privateKey = null;
-    if(in_array($level, array('simple','dual'))) {
+    if (in_array($level, array('simple', 'dual'))) {
 
-        if(!isset($_POST['private_key'])) {
+        if (!isset($_POST['private_key'])) {
             throw new Exception('Missing private_key');
         }
 
@@ -70,6 +70,26 @@ try {
             throw new Exception('invalid private_key');
         }
 
+    }
+
+    //
+    // Expiration [Optional - default to 24hours]
+    //
+    $expiration = 86400;
+
+    $allowedExpirations = array(
+        '300', // 5minutes, same person exchange
+        '900', // 15minutes, 2 person on a chat
+        '3600', // 1hours, 2 person by Email
+        '28800', // 8hours, must be read within the working day
+        '86400', // 1day - standard
+        '259200', // 3 days, include a weekend
+        '604800', // 1 week - for slow people
+        '2592000', // 1 month - for people in holidays
+    );
+
+    if (isset($_POST['expiration']) && in_array($_POST['expiration'], $allowedExpirations)) {
+        $expiration = $_POST['expiration'];
     }
 
     //
@@ -95,10 +115,11 @@ try {
     $shareContentArray = array(
         'time' => $now,
         'level' => $level,
+        'expiration' => $expiration,
         'ciphertext' => $ciphertext
     );
 
-    if($privateKey) {
+    if ($privateKey) {
         $shareContentArray['private_key'] = $privateKey;
     }
 

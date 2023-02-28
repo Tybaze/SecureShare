@@ -7,7 +7,13 @@ Demo available here : <a href="https://www.secure-share.link/" target="_blank">h
 ##  Current Hash
 
 The Current Hash is : 
-> sha384-WNQztH5L3L5eTc333pQ+mZgTpIEHNQ95ILNuK/T40F1y7LO2fZAK3yLU5b0TJUVC
+> sha384-UWumJatfFZr/ZHiB3Tuo5/GragtwyT33oAwnEARmw3FIEMbP6oiazQxQTBcFIVq8
+
+
+
+
+<br/>
+<br/>
 
 ## The 4 Security Levels 
 
@@ -56,6 +62,9 @@ Please note :
 - Generation of the share could be long and hang your browser, because it use 4096 rsa key
 - Use really 3 distinct communication channels, and share the "Password" (PrivateKey) on the safest way.
 - You should really <b>BOTH</b> use several "Connections", because if you Sender or Receiver are under a man in the middle proxy, you shouldn't rely on only one connection.  
+
+<br/>
+<br/>
 
 ## How does it works
 
@@ -159,8 +168,8 @@ or
 - [X] Make the share to expired 
 - [X] Make the share to be shred
 - [X] Implements Security Levels
+- [X] Make expire in parameter
 - [ ] Allow share of files
-- [ ] Find an easy SRI check for Smartphone
-- [ ] Make expire in parameter
+- [ ] Find an easy SRC check for Smartphone
 - [ ] Allow local result caching
 <br/>
